@@ -25,7 +25,46 @@
 .view-button {
   display: inline-block;
   padding: 10px 15px;
-  background: #2a9d8f;
+  background: #2a9d8f;<style>
+.product-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    max-width: 250px;
+    margin: 20px auto;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 🌸 Hover effect for product cards */
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 0 20px rgba(255, 125, 168, 0.6), 0 0 40px rgba(255, 125, 168, 0.3);
+}
+
+/* Button Styling */
+.product-card button {
+    background: #ff7da8; /* pink brand color */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin-top: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 125, 168, 0.3);
+}
+
+/* 🌸 Hover effect */
+.product-card button:hover {
+    background: #ff5f92; /* slightly deeper pink */
+    box-shadow: 0 0 20px rgba(255, 125, 168, 0.6), 0 0 40px rgba(255, 125, 168, 0.3);
+    transform: translateY(-2px);
+}
+</style>
   color: #fff;
   text-decoration: none;
   border-radius: 6px;
