@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeDessineur — Admin Editor</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0; padding:20px; background:#fff8fb;}
+    .wrap{max-width:900px;margin:0 auto;}
+    h1{margin:0 0 12px}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text], textarea, input[type=number]{width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; box-sizing:border-box}
+    textarea{min-height:100px}
+    .row{display:flex; gap:12px; margin-top:10px}
+    .row > *{flex:1}
+    button{padding:10px 14px; border-radius:8px; border:0; cursor:pointer; background:#ff7da8; color:white; font-weight:700}
+    .btn-ghost{background:#fff;border:1px solid #ddd;color:#333}
+    .product-list{margin-top:18px}
+    .product-item{background:#fff;border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+    .product-item h3{margin:0}
+    .controls{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap}
+    .small{padding:6px 10px; font-size:14px}
+    .actions{display:flex; gap:8px; margin-top:16px}
+    .hint{color:#666;font-size:13px;margin-top:8px}
+    pre{white-space:pre-wrap;background:#fff;border:1px solid #eee;padding:10px;border-radius:8px;overflow:auto}
+    .top-note{background:#fff0f6;padding:10px;border-radius:8px;margin-bottom:14px;border:1px solid #ffd6e8}
+    .danger{background:#fff6f6;border:1px solid #f5c2c7;color:#7a161b;padding:10px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>LeDessineur — Admin Editor</h1>
+    <div id="authWrap" class="top-note">
+      This page is intended for the shop owner only. Provide the secret `?key=` in the URL to access the editor.
+    </div>
+
+    <div id="editor" style="display:none">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="flex:1">
+          <label>Product title</label>
+          <input id="title" placeholder="e.g. Interstellar Drawing" type="text">
+          <label>Price (CAD)</label>
+          <input id="price" placeholder="20.00" type="text">
+          <label>Image filename (in /images folder)</label>
+          <input id="image" placeholder="images/interstellar.jpg" type="text">
+          <div class="hint">Upload the image file to your repo's <code>/images/</code> folder (use the same filename).</div>
+        </div>
+        <div style="flex:1">
+          <label>Description (HTML allowed)</label>
+          <textarea id="desc" placeholder="Full product description..."></textarea>
+          <label>Product slug (URL-safe short id)</label>
+          <input id="slug" placeholder="interstellar" type="text">
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="addBtn">Add product</button>
+        <button id="updateBtn" class="btn-ghost" style="display:none">Save changes</button>
+        <button id="clearForm" class="btn-ghost small">Clear form</button>
+      </div>
+
+      <div class="actions">
+        <button id="downloadJson">Download products.json</button>
+        <button id="copyJson" class="btn-ghost">Copy JSON</button>
+        <button id="generateSnippet" class="btn-ghost">Copy JS snippet for index.html</button>
+        <button id="resetAll" class="danger">Delete all products</button>
+      </div>
+
+      <h2 style="margin-top:18px">Current products</h2>
+      <div id="list" class="product-list"></div>
+
+      <h3>Quick tips</h3>
+      <ul>
+        <li>Upload images to <code>/images/</code> folder in your repo—same filename you enter in the editor.</li>
+        <li>After downloading / copying <code>products.json</code>, upload it to the site root (same folder as <code>index.html</code>).</li>
+        <li>Index page is set to auto-load <code>products.json</code> if present.</li>
+      </ul>
+
+      <h3>Current JSON preview</h3>
+      <pre id="jsonPreview">[]</pre>
+    </div>
+
+    <div id="failed" style="display:none" class="danger">
+      Unauthorized. Add the secret key `?key=YOURSECRET` to the URL to access the editor.
+    </div>
+  </div>
+
+<script>
+(function(){
+  // === Config: change this secret to something only you know ===
+  const SECRET = 'letmein123'; // <<< change this to your secret, e.g. 'myshopadmin42'
+  // === End config ===
+
+  function qs(id){return document.getElementById(id)}
+
+  // Auth by URL param ?key=SECRET
+  const urlParams = new URLSearchParams(window.location.search);
+  const key = urlParams.get('key') || '';
+  if(key !== SECRET){
+    qs('editor').style.display='none';
+    qs('failed').style.display='block';
+    qs('authWrap').style.display='none';
+    return;
+  }
+  qs('authWrap').style.display='none';
+  qs('editor').style.display='block';
+
+  // products array
+  let products = JSON.parse(localStorage.getItem('ld_products') || '[]');
+  let editIndex = -1;
+
+  function saveLocal(){ localStorage.setItem('ld_products', JSON.stringify(products)); render(); }
+
+  function render(){
+    const list = qs('list');
+    list.innerHTML = '';
+    products.forEach((p,i)=>{
+      const div = document.createElement('div');
+      div.className='product-item';
+      div.innerHTML = `<h3>${escapeHtml(p.title)}</h3>
+                       <div>${escapeHtml(p.price ? ('CA$'+p.price) : '')} • <small>${escapeHtml(p.slug||'')}</small></div>
+                       <div style="margin-top:8px">${escapeHtml(p.image || '')}</div>
+                       <div class="controls">
+                         <button onclick="window.adminEdit(${i})" class="small btn-ghost">Edit</button>
+                         <button onclick="window.adminDelete(${i})" class="small">Delete</button>
+                       </div>`;
+      list.appendChild(div);
+    });
+    qs('jsonPreview').textContent = JSON.stringify(products, null, 2);
+  }
+
+  // helpers
+  window.adminEdit = function(i){
+    editIndex = i;
+    const p = products[i];
+    qs('title').value = p.title; qs('price').value = p.price;
+    qs('image').value = p.image; qs('desc').value = p.desc;
+    qs('slug').value = p.slug;
+    qs('addBtn').style.display='none'; qs('updateBtn').style.display='inline-block';
+  }
+  window.adminDelete = function(i){
+    if(!confirm('Delete this product?')) return;
+    products.splice(i,1); saveLocal();
+  }
+
+  function clearForm(){
+    qs('title').value=''; qs('price').value=''; qs('image').value=''; qs('desc').value=''; qs('slug').value='';
+    editIndex = -1; qs('addBtn').style.display='inline-block'; qs('updateBtn').style.display='none';
+  }
+
+  // escape helper
+  function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // add
+  qs('addBtn').addEventListener('click', function(){
+    const p = {
+      title: qs('title').value.trim(),
+      price: qs('price').value.trim(),
+      image: qs('image').value.trim(),
+      desc: qs('desc').value.trim(),
+      slug: qs('slug').value.trim() || (qs('title').value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')),
+    };
+    if(!p.title) { alert('Please give a title'); return; }
+    products.push(p); saveLocal(); clearForm();
+  });
+
+  qs('updateBtn').addEventListener('click', function(){
+    if(editIndex<0) return;
+    const p = products[editIndex];
+    p.title = qs('title').value.trim();
+    p.price = qs('price').value.trim();
+    p.image = qs('image').value.trim();
+    p.desc = qs('desc').value.trim();
+    p.slug = qs('slug').value.trim() || p.slug;
+    products[editIndex] = p; saveLocal(); clearForm();
+  });
+
+  qs('clearForm').addEventListener('click', clearForm);
+
+  qs('resetAll').addEventListener('click', function(){
+    if(!confirm('Delete ALL products? This cannot be undone.')) return;
+    products = []; saveLocal();
+  });
+
+  // Download JSON
+  qs('downloadJson').addEventListener('click', function(){
+    const data = JSON.stringify(products, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'products.json'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+  });
+
+  // Copy JSON
+  qs('copyJson').addEventListener('click', function(){
+    const data = JSON.stringify(products, null, 2);
+    navigator.clipboard.writeText(data).then(()=>alert('JSON copied to clipboard'));
+  });
+
+  // Generate JS snippet (for small sites that don't load products.json)
+  qs('generateSnippet').addEventListener('click', function(){
+    const data = JSON.stringify(products, null, 2);
+    const snippet = `<!-- paste this into your index.html replacing the products variable -->\n<script>\nconst PRODUCTS = ${data};\n</script>`;
+    navigator.clipboard.writeText(snippet).then(()=>alert('JS snippet copied to clipboard — paste into index.html'));
+  });
+
+  // init
+  render();
+})();
+</script>
+</body>
+</html>
