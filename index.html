@@ -6,182 +6,145 @@
   <title>LeDessineur Shop</title>
   <style>
     body {
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:#fce6ef; color:#333;
+      margin:0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background:#fce6f0;
     }
     header {
-      text-align:center;
-      background:#fce6ef;
-      padding:30px 10px;
-      background-image:url('images/banner.jpg'); /* Replace with your banner filename */
-      background-size:cover;
-      background-position:center;
+      background: url('banner.jpg') center/cover no-repeat;
       color:white;
-      text-shadow:0 2px 8px rgba(0,0,0,0.6);
-    }
-    header h1 {
-      font-family:'Brush Script MT', cursive;
-      font-size:60px;
-      margin:0;
+      padding:80px 20px;
+      text-align:center;
+      font-size:48px;
+      font-family: 'Brush Script MT', cursive;
+      letter-spacing:2px;
+      text-shadow: 0 0 8px rgba(0,0,0,0.5);
     }
     .products {
       display:grid;
-      grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+      grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
       gap:20px;
-      padding:40px 20px;
-      max-width:1200px;
-      margin:auto;
+      padding:40px;
     }
     .product-card {
+      position:relative;
       background:white;
       border-radius:12px;
       padding:16px;
+      box-shadow:0 4px 8px rgba(0,0,0,0.1);
       text-align:center;
-      box-shadow:0 4px 12px rgba(0,0,0,0.1);
     }
     .product-card img {
       max-width:100%;
-      border-radius:12px;
-      height:auto;
+      border-radius:8px;
     }
     .price {
-      font-weight:bold;
       color:#e60073;
+      font-weight:bold;
       margin:8px 0;
     }
-    .product-card button {
+    .view-btn {
       background:#e60073;
       color:white;
       border:none;
-      padding:10px 16px;
-      border-radius:8px;
+      padding:8px 16px;
+      border-radius:6px;
       cursor:pointer;
-      font-size:15px;
-      font-weight:600;
-    }
-    .product-card button:hover { background:#cc0066; }
-
-    /* Modal */
-    #modal {
-      display:none;
-      position:fixed;
-      top:0;left:0;right:0;bottom:0;
-      background:rgba(0,0,0,0.7);
-      justify-content:center;
-      align-items:center;
-      z-index:1000;
-    }
-    #modalContent {
-      background:white;
-      padding:20px;
-      border-radius:16px;
-      max-width:600px;
-      width:90%;
-      text-align:center;
-      position:relative;
-    }
-    #modalContent img { max-width:100%; border-radius:12px; }
-    #modalContent .close {
-      position:absolute; right:12px; top:12px;
-      cursor:pointer; font-size:24px; font-weight:bold;
     }
 
-    /* About Seller card with glow */
-    .about {
-      max-width:800px;
-      margin:60px auto;
-      background:white;
-      border-radius:16px;
-      padding:30px;
-      text-align:center;
-      box-shadow:0 0 25px rgba(255, 118, 165, 0.5);
+    /* Heart button styles */
+    .heart-btn {
+      position:absolute;
+      top:10px;
+      right:10px;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font-size:24px;
+      color:#e60073;
+      transition:transform 0.2s;
     }
-    .about img {
-      max-width:120px;
-      border-radius:50%;
-      margin-bottom:20px;
-    }
+    .heart-btn:hover { transform:scale(1.1); }
+    .heart-btn.favorited { color:#ff3366; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>LeDessineur</h1>
-  </header>
+<header>LeDessineur</header>
 
-  <!-- Product grid -->
-  <div id="products" class="products"></div>
+<section class="products" id="productGrid"></section>
 
-  <!-- About Seller -->
-  <div class="about">
-    <img src="images/logo.jpg" alt="Logo" />
-    <h2>About the Seller</h2>
-    <p>Welcome to LeDessineur — a collection of hand-drawn artworks and unique prints created with passion and care.</p>
-  </div>
-
-  <!-- Modal for product details -->
-  <div id="modal">
-    <div id="modalContent">
-      <span class="close" onclick="closeModal(event)">&times;</span>
-    </div>
-  </div>
-
-  <script>
-    // === Load products.json if present ===
-    async function loadProducts() {
-      try {
-        const res = await fetch('products.json', { cache: 'no-store' });
-        if (res.ok) return await res.json();
-      } catch(e) { console.warn('No products.json found, using fallback.'); }
-      // Fallback example (edit or leave empty)
-      return [
-        {
-          "title": "Sample Artwork",
-          "price": "20.00",
-          "image": "images/sample.jpg",
-          "desc": "Replace this sample by adding products in admin.html."
-        }
-      ];
+<script>
+  // Example product list (you can keep adding here or use your admin.html editor)
+  const products = [
+    {
+      title:"Interstellar Drawing",
+      price:20,
+      image:"products/interstellar.jpg",
+      description:"A detailed drawing from the movie 'Interstellar' including the Endurance, the Lander and the Ranger. Frame not included."
+    },
+    {
+      title:"Map of the Americas",
+      price:18,
+      image:"products/map-americas.jpg",
+      description:"A map of North and South America depicting geography from Canada and the United States all the way to Brazil and Argentina. Not 100% to scale."
+    },
+    {
+      title:"Palm Sunset Card",
+      price:6,
+      image:"products/palm-sunset.jpg",
+      description:"A blank greeting card featuring a serene palm tree silhouette against a brilliant tropical sunset."
     }
+  ];
 
-    function renderProducts(list) {
-      const container = document.getElementById('products');
-      container.innerHTML = '';
-      list.forEach((p, idx) => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-          <img src="${p.image}" alt="${p.title}">
-          <h3>${p.title}</h3>
-          <p class="price">CA$${p.price}</p>
-          <button>View Details</button>
-        `;
-        card.querySelector('button').addEventListener('click', () => openModal(idx));
-        container.appendChild(card);
-      });
-      window._products = list;
-    }
-
-    function openModal(index) {
-      const p = window._products[index];
-      document.getElementById('modalContent').innerHTML = `
-        <span class="close" onclick="closeModal(event)">&times;</span>
+  // render products with hearts
+  function renderProducts(list) {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = '';
+    window._products = list; // store for heart toggling
+    list.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <button class="heart-btn" data-idx="${idx}">♡</button>
         <img src="${p.image}" alt="${p.title}">
-        <h2>${p.title}</h2>
+        <h3>${p.title}</h3>
         <p class="price">CA$${p.price}</p>
-        <p>${p.desc}</p>
+        <button class="view-btn">View Details</button>
       `;
-      document.getElementById('modal').style.display = 'flex';
-    }
+      grid.appendChild(card);
+    });
+  }
 
-    function closeModal(e){
-      if (e) e.stopPropagation();
-      document.getElementById('modal').style.display = 'none';
-    }
+  function setupFavorites() {
+    const saved = JSON.parse(localStorage.getItem('favorites') || '[]');
+    document.querySelectorAll('.heart-btn').forEach(btn => {
+      const idx = btn.dataset.idx;
+      if (saved.includes(idx)) {
+        btn.classList.add('favorited');
+        btn.textContent = '❤';
+      }
+      btn.addEventListener('click', () => toggleFavorite(btn, idx));
+    });
+  }
 
-    // Initialize
-    loadProducts().then(renderProducts);
-  </script>
+  function toggleFavorite(btn, idx) {
+    let favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+    if (favs.includes(idx)) {
+      favs = favs.filter(f => f !== idx);
+      btn.classList.remove('favorited');
+      btn.textContent = '♡';
+    } else {
+      favs.push(idx);
+      btn.classList.add('favorited');
+      btn.textContent = '❤';
+    }
+    localStorage.setItem('favorites', JSON.stringify(favs));
+  }
+
+  renderProducts(products);
+  setupFavorites();
+</script>
 
 </body>
 </html>
